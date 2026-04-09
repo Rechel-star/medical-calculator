@@ -1,4 +1,4 @@
-const DB_COMMON = [
+var DB_COMMON = [
     {
         "id": "bmi",
         "title": "体重指数 (BMI) 计算与分级",
