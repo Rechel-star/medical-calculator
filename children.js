@@ -2357,7 +2357,6 @@ var DB_CHILDREN = [
         "临床场景": "急诊抢救室/手术麻醉"
     },
     {
-  {
         "id": "body_props",
         "title": "小儿身体各部位比例、上下量及测定临床意义",
         "type": "reference_table",
