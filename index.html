@@ -10,29 +10,14 @@
     <script src="liver.js"></script>
     
     <style>
-        /* 样式完全保留原版 UI 设计 */
-        :root {
-            --primary: #059669;
-            --primary-light: #ECFDF5;
-            --accent: #F59E0B;
-            --accent-light: #FFFBEB;
-            --bg-content: #F4F7F4;
-            --sidebar-bg: #FFFFFF;
-            --text-main: #1F2937;
-            --text-soft: #64748B;
-            --divider: #E2E8F0;
-            --card-radius: 18px;
-            --danger: #EF4444;
-        }
-
+        /* UI 样式保持不变 */
+        :root { --primary: #059669; --primary-light: #ECFDF5; --accent: #F59E0B; --accent-light: #FFFBEB; --bg-content: #F4F7F4; --sidebar-bg: #FFFFFF; --text-main: #1F2937; --text-soft: #64748B; --divider: #E2E8F0; --card-radius: 18px; --danger: #EF4444; }
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, "SF Pro Text", "PingFang SC", sans-serif; -webkit-tap-highlight-color: transparent; }
         body { background: var(--sidebar-bg); color: var(--text-main); height: 100vh; overflow: hidden; position: relative; }
-
         .page { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.25, 1); background: var(--bg-content); }
         #page-calc { transform: translateX(100%); z-index: 100; box-shadow: -15px 0 30px rgba(0,0,0,0.04); }
         body.active-calc #page-calc { transform: translateX(0); }
         body.active-calc #page-home { transform: translateX(-20%); }
-
         .header { background: #FFF; padding: calc(env(safe-area-inset-top) + 12px) 16px 14px; z-index: 10; border-bottom: 1px solid var(--divider); }
         .logo-area { font-size: 21px; font-weight: 800; color: var(--primary); margin-bottom: 14px; letter-spacing: 0.5px; display: flex; align-items: center; }
         .search-wrapper { position: relative; width: 100%; display: flex; align-items: center; }
@@ -40,7 +25,6 @@
         .search-icon svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2.2; }
         .search-box { width: 100%; background: #F1F5F9; border: 1px solid transparent; padding: 11px 14px 11px 40px; border-radius: 12px; font-size: 15px; outline: none; transition: 0.2s; color: var(--text-main); }
         .search-box:focus { background: #FFF; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.15); }
-
         .main-container { flex: 1; display: flex; overflow: hidden; }
         .sidebar { width: 125px; background: var(--sidebar-bg); display: flex; flex-direction: column; overflow-y: auto; padding: 10px 0; -webkit-overflow-scrolling: touch; border-right: 1px solid var(--divider); }
         .cat-btn { width: 100%; padding: 20px 14px; border: none; background: none; font-size: 15px; color: var(--text-soft); text-align: left; cursor: pointer; position: relative; transition: 0.2s; display: flex; justify-content: space-between; align-items: center; }
@@ -48,41 +32,35 @@
         .cat-btn.active::before, .cat-btn.active::after { content: ""; position: absolute; right: 0; width: 12px; height: 12px; background: transparent; }
         .cat-btn.active::before { top: -12px; border-radius: 0 0 12px 0; box-shadow: 4px 4px 0 4px var(--bg-content); }
         .cat-btn.active::after { bottom: -12px; border-radius: 0 12px 0 0; box-shadow: 4px -4px 0 4px var(--bg-content); }
-        .cat-count { font-size: 12px; background: var(--accent-light); color: var(--accent); padding: 2px 7px; border-radius: 10px; font-weight: 800; border: 1px solid rgba(245, 158, 11, 0.2); }
+        .cat-count { font-size: 12px; background: var(--accent-light); color: var(--accent); padding: 2px 7px; border-radius: 10px; font-weight: 800; border: 1px solid rgba(245, 158, 11, 0.2); pointer-events: none; }
         .sidebar-footer { margin-top: 20px; padding: 15px 10px; text-align: center; font-size: 12px; color: #CBD5E1; line-height: 1.6; border-top: 1px dashed #E2E8F0; }
-
         .content-area { flex: 1; padding: 16px 12px; overflow-y: auto; background: var(--bg-content); -webkit-overflow-scrolling: touch; }
         .reset-bar { display: flex; justify-content: space-between; align-items: center; padding: 0 4px 14px; }
         .reset-text { font-size: 12px; color: var(--text-soft); font-weight: 600; }
         .reset-btn { background: #FEF2F2; color: var(--danger); border: 1px solid rgba(239, 68, 68, 0.2); padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: bold; cursor: pointer; transition: 0.2s; }
         .reset-btn:active { transform: scale(0.95); background: #FEE2E2; }
-        
         .formula-card { background: #FFF; padding: 20px 16px; border-radius: var(--card-radius); margin-bottom: 12px; box-shadow: 0 2px 10px rgba(5, 150, 105, 0.03); border: 1px solid rgba(0,0,0,0.02); cursor: pointer; }
         .formula-card:active { transform: scale(0.98); background: #F8FAFC; }
-        .card-title { font-size: 16px; font-weight: 700; color: #1F2937; margin-bottom: 10px; line-height: 1.4; }
-        .card-tags { display: flex; flex-wrap: wrap; gap: 8px; }
+        .card-title { font-size: 16px; font-weight: 700; color: #1F2937; margin-bottom: 10px; line-height: 1.4; pointer-events: none; }
+        .card-tags { display: flex; flex-wrap: wrap; gap: 8px; pointer-events: none; }
         .card-tag { font-size: 11px; padding: 4px 8px; border-radius: 6px; font-weight: 600; display: inline-block; }
         .tag-cat { color: var(--primary); background: var(--primary-light); border: 1px solid rgba(5, 150, 105, 0.1); }
         .tag-func { color: var(--accent); background: var(--accent-light); border: 1px solid rgba(245, 158, 11, 0.1); }
-
         .calc-nav { display: flex; align-items: center; padding: calc(env(safe-area-inset-top) + 12px) 15px 12px; background: #FFF; border-bottom: 1px solid var(--divider); position: sticky; top: 0; z-index: 10; }
         .back-btn { font-size: 16px; color: var(--primary); background: none; border: none; cursor: pointer; display: flex; align-items: center; font-weight: 600; padding: 6px; }
         .calc-title { flex: 1; text-align: center; font-size: 17px; font-weight: bold; margin-right: 45px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #111827; }
         .calc-body { flex: 1; overflow-y: auto; padding: 16px; }
-
         .section-intro { background: #FFF; padding: 20px; border-radius: var(--card-radius); margin-bottom: 16px; border-left: 5px solid var(--primary); box-shadow: 0 4px 12px rgba(5, 150, 105, 0.04); }
         .intro-title { font-size: 14px; color: var(--primary); font-weight: 800; margin-bottom: 12px; letter-spacing: 0.5px; }
         .intro-tags { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
         .intro-tag { font-size: 11px; background: var(--primary-light); color: var(--primary); padding: 4px 10px; border-radius: 6px; font-weight: 600; border: 1px solid rgba(5, 150, 105, 0.1); }
         .intro-content { font-size: 14px; line-height: 1.7; color: #475569; margin-bottom: 12px; }
         .intro-math { font-family: monospace; font-size: 13px; color: #64748B; background: #F8FAFC; padding: 12px; border-radius: 8px; border: 1px dashed #CBD5E1; }
-
         .section-input { background: #FFF; border-radius: var(--card-radius); border: 1px solid var(--divider); margin-bottom: 16px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.02); }
         .section-input:empty { display: none; }
         .input-row { display: flex; flex-direction: column; padding: 18px 16px; border-bottom: 1px solid var(--divider); }
         .input-row:last-child { border-bottom: none; }
         .input-label { font-size: 15px; color: #334155; font-weight: 600; margin-bottom: 12px; }
-
         .field-box { display: flex; align-items: center; background: #F8FAFC; border-radius: 12px; padding: 12px; border: 1px solid transparent; transition: 0.2s; }
         .field-box:focus-within { background: #FFF; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.1); }
         .field-box.error-box { border-color: var(--danger); background: #FEF2F2; }
@@ -90,14 +68,11 @@
         .num-input::-webkit-outer-spin-button, .num-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
         .num-input::placeholder { color: var(--text-soft); opacity: 0.35; font-weight: 400; }
         .field-unit { color: var(--text-soft); font-size: 14px; margin-left: 8px; font-weight: 800; }
-
         .seg-control { display: flex; background: #F1F5F9; border-radius: 10px; padding: 4px; flex-wrap: wrap; gap: 6px; }
         .seg-btn { flex: 1 1 auto; min-width: 120px; border: none; background: transparent; padding: 10px 8px; border-radius: 8px; font-size: 13px; color: var(--text-soft); font-weight: 600; cursor: pointer; transition: 0.15s; white-space: normal; word-break: break-word; line-height: 1.3; display: flex; align-items: center; justify-content: center; text-align: center; }
         .seg-btn.active { background: #FFF; color: var(--primary); font-weight: bold; box-shadow: 0 2px 6px rgba(0,0,0,0.05); }
-
         .calc-trigger { background: linear-gradient(135deg, #059669 0%, #65A30D 100%); color: #FFF; border: none; padding: 18px; border-radius: 18px; font-size: 17px; font-weight: bold; width: 100%; margin-top: 10px; cursor: pointer; box-shadow: 0 8px 20px rgba(5, 150, 105, 0.25); }
         .calc-trigger:active { transform: scale(0.98); opacity: 0.9; }
-
         .section-result { display: none; margin-top: 30px; padding-bottom: 50px; animation: slideUp 0.4s ease; }
         .result-main-card { background: #FFF; padding: 32px 16px; border-radius: 20px; text-align: center; margin-bottom: 16px; border: 2.5px solid var(--primary); box-shadow: 0 8px 25px rgba(5, 150, 105, 0.1); }
         .res-top-label { font-size: 12px; color: var(--text-soft); margin-bottom: 10px; font-weight: 800; text-transform: uppercase; }
@@ -107,11 +82,22 @@
         .info-header::before { content: ""; display: inline-block; width: 4px; height: 14px; background: var(--primary); border-radius: 2px; margin-right: 8px; }
         .info-body { font-size: 14px; line-height: 1.7; color: #475569; white-space: pre-wrap; }
         .dynamic-advice { font-weight: 600; color: #92400E; background: var(--accent-light); padding: 14px; border-radius: 10px; border-left: 4px solid var(--accent); }
-
         @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
     </style>
 </head>
 <body>
+
+    <div id="sys-error-log" style="display:none; position:fixed; top:0; left:0; width:100%; background:#EF4444; color:#FFF; z-index:9999; padding:12px; font-size:13px; font-weight:bold; box-shadow:0 4px 10px rgba(0,0,0,0.2);"></div>
+
+    <script>
+        // 全局崩溃拦截器
+        window.onerror = function(msg, src, line) {
+            const log = document.getElementById('sys-error-log');
+            log.style.display = 'block';
+            log.innerHTML += `🚨 系统错误: ${msg} (第 ${line} 行)<br>`;
+            console.error(msg, line);
+        };
+    </script>
 
     <div id="page-home" class="page">
         <div class="header">
@@ -125,7 +111,7 @@
             <aside class="sidebar" id="sidebar"></aside>
             <main class="content-area" id="contentArea">
                 <div id="loadError" style="display:none; padding:20px; text-align:center; color:var(--danger); font-size:14px; line-height:1.6;">
-                    ⚠️ 未检测到任何有效数据。<br>请确认 .js 文件已正确引入。
+                    ⚠️ 未检测到数据。请确认引入了正确的 .js 数据库文件。
                 </div>
             </main>
         </div>
@@ -172,31 +158,40 @@
             "scr": { min: 10, max: 3000, label: "血肌酐" }
         };
 
+        // 转义工具，防止数据导致 HTML 错乱
+        function escapeHTML(str) {
+            if (!str) return "";
+            return String(str)
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
         window.addEventListener('DOMContentLoaded', () => {
             let mergedData = [];
             
-            // 1. 抓取所有合法的全局变量
+            // 抓取数据池
             for (let key in window) {
                 if ((key.startsWith('DB_') || key === 'BULTIN_DB' || key === 'F') && Array.isArray(window[key])) {
                     mergedData = mergedData.concat(window[key]);
                 }
             }
 
-            // 【终极安全防线】：强力清洗所有数据，解决隐形换行符和字段缺失导致的崩溃
+            // 极度严格的数据清洗：剔除任何不规范、没有标题或ID的数据
             let validData = [];
             mergedData.forEach(item => {
                 if (item && typeof item === 'object' && item.id && item.title) {
-                    // 强制转为字符串并去除首尾隐藏的换行符/空格 (\r \n)
                     item.id = String(item.id).trim();
                     item.title = String(item.title).trim();
                     item.category = String(item.category || "综合科室").trim();
-                    if(item.临床场景) item.临床场景 = String(item.临床场景).trim();
                     validData.push(item);
                 }
             });
             mergedData = validData;
 
-            // 3. 数据去重
+            // 数据去重
             const uniqueMap = new Map();
             mergedData.forEach(item => uniqueMap.set(item.id, item));
             db = Array.from(uniqueMap.values());
@@ -206,11 +201,15 @@
                 return;
             }
 
-            // 4. 高频提取逻辑
-            let usageMap = JSON.parse(sessionStorage.getItem('medical_calc_usage') || '{}');
+            // 智能抓取高频公式 (加上 try...catch 防浏览器阻挡报错)
+            let usageMap = {};
+            try {
+                usageMap = JSON.parse(sessionStorage.getItem('medical_calc_usage') || '{}');
+            } catch(e) {}
+
             let commonIds = new Set(db.filter(i => i.category === '常用公式').map(i => i.id));
             let dynamicCommons = [];
-            let hasDynamic = false;
+            window.hasDynamicCommons = false;
 
             db.forEach(item => {
                 if (usageMap[item.id] >= 3 && item.category !== '常用公式' && !commonIds.has(item.id)) {
@@ -220,16 +219,15 @@
                     copy.title = '[高频] ' + copy.title;
                     dynamicCommons.push(copy);
                     commonIds.add(item.id);
-                    hasDynamic = true;
+                    window.hasDynamicCommons = true;
                 }
             });
             db = db.concat(dynamicCommons);
-            window.hasDynamicCommons = hasDynamic;
 
-            // 5. 分类排序 (强制固定"常用公式"排在第一位)
+            // 排列科室
             categories = [...new Set(db.map(i => i.category))];
             categories = categories.filter(c => c !== "常用公式"); 
-            categories.unshift("常用公式"); 
+            categories.unshift("常用公式"); // 强行霸占第一席位
 
             currentCat = categories[0];
             renderSidebar();
@@ -240,33 +238,34 @@
             let counts = {};
             db.forEach(item => { counts[item.category] = (counts[item.category] || 0) + 1; });
 
-            let html = categories.map(c => {
-                // 安全转义，防止名字里有单引号或双引号撑爆 HTML
-                let safeC = c.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '&quot;');
-                return `
-                <button class="cat-btn ${c === currentCat ? 'active' : ''}" onclick="switchCat('${safeC}')">
-                    <span>${c}</span>
+            // 抛弃 onclick 注入，改用自定义属性 data-cat，绝对防断裂
+            let html = categories.map(c => `
+                <button class="cat-btn ${c === currentCat ? 'active' : ''}" data-cat="${escapeHTML(c)}">
+                    <span>${escapeHTML(c)}</span>
                     <span class="cat-count">${counts[c] || 0}</span>
                 </button>
-                `;
-            }).join('');
+            `).join('');
 
             html += `<div class="sidebar-footer">科室分类<br>动态管理</div>`;
             document.getElementById('sidebar').innerHTML = html;
         }
 
-        function switchCat(c) { 
-            currentCat = c; 
-            renderSidebar(); 
-            renderList(c); 
-        }
+        // 委托代理点击侧边栏事件
+        document.getElementById('sidebar').addEventListener('click', (e) => {
+            const btn = e.target.closest('.cat-btn');
+            if (btn) {
+                const targetCat = btn.getAttribute('data-cat');
+                currentCat = targetCat;
+                renderSidebar();
+                renderList(targetCat);
+            }
+        });
 
         function renderList(c, kw = "") {
             document.getElementById('loadError').style.display = 'none';
 
             let list;
             if (kw) {
-                // 搜索功能加固：强制转字符串，彻底防止 toLowerCase() 报类型错误
                 let searchKw = String(kw).toLowerCase().trim();
                 list = db.filter(i => 
                     String(i.title).toLowerCase().includes(searchKw) || 
@@ -278,37 +277,54 @@
 
             let html = "";
             if (c === '常用公式' && !kw && window.hasDynamicCommons) {
-                html += `<div class="reset-bar"><span class="reset-text">当前包含智能提取的高频公式</span><button class="reset-btn" onclick="resetCommons()">恢复默认</button></div>`;
+                html += `<div class="reset-bar"><span class="reset-text">当前包含智能提取的高频公式</span><button class="reset-btn" id="btnResetCommon">恢复默认</button></div>`;
             }
 
             if (list.length === 0) {
                 html += `<div style="text-align:center; padding:40px 20px; color:#94A3B8; font-size:14px;">当前分类暂无量表数据或检索无结果</div>`;
             } else {
+                // 抛弃 onclick，使用 data-id
                 html += list.map((item) => {
                     let actualCat = item.originalCategory || item.category || "通用";
-                    let catTagHtml = (actualCat !== "常用公式") ? `<span class="card-tag tag-cat">${actualCat}</span>` : "";
+                    let catTagHtml = (actualCat !== "常用公式") ? `<span class="card-tag tag-cat">${escapeHTML(actualCat)}</span>` : "";
                     let scene = item.临床场景 ? String(item.临床场景).trim() : "临床评估";
-                    let funcTagHtml = `<span class="card-tag tag-func">${scene}</span>`;
+                    let funcTagHtml = `<span class="card-tag tag-func">${escapeHTML(scene)}</span>`;
                     
-                    let safeId = String(item.id).replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '&quot;');
-
                     return `
-                    <div class="formula-card" onclick="openDetail('${safeId}')">
-                        <div class="card-title">${item.title}</div>
+                    <div class="formula-card" data-id="${escapeHTML(item.id)}">
+                        <div class="card-title">${escapeHTML(item.title)}</div>
                         <div class="card-tags">${catTagHtml}${funcTagHtml}</div>
                     </div>`;
                 }).join('');
             }
 
             document.getElementById('contentArea').innerHTML = html;
-        }
 
-        function resetCommons() {
-            if (confirm("确定要清除智能提取的高频记录，恢复到默认公式吗？")) {
-                sessionStorage.removeItem('medical_calc_usage');
-                location.reload();
+            // 绑定恢复默认按钮事件
+            const resetBtn = document.getElementById('btnResetCommon');
+            if(resetBtn) {
+                resetBtn.addEventListener('click', () => {
+                    if (confirm("确定要清除智能提取的高频记录吗？")) {
+                        try { sessionStorage.removeItem('medical_calc_usage'); } catch(e) {}
+                        location.reload();
+                    }
+                });
             }
         }
+
+        // 委托代理点击量表卡片事件
+        document.getElementById('contentArea').addEventListener('click', (e) => {
+            const card = e.target.closest('.formula-card');
+            if (card) {
+                openDetail(card.getAttribute('data-id'));
+            }
+        });
+
+        // 搜索框绑定事件
+        document.getElementById('searchInput').addEventListener('input', (e) => {
+            const kw = e.target.value.trim();
+            if (kw) renderList(null, kw); else renderList(currentCat);
+        });
 
         function openDetail(targetId) {
             formula = db.find(i => i.id === targetId);
@@ -319,9 +335,9 @@
 
             let actualCat = formula.originalCategory || formula.category || '综合';
             document.getElementById('introTags').innerHTML = `
-                <span class="intro-tag">科室: ${actualCat}</span>
-                <span class="intro-tag">人群: ${formula.适用人群 || '常规人群'}</span>
-                <span class="intro-tag">场景: ${formula.临床场景 || '临床量表评估'}</span>
+                <span class="intro-tag">科室: ${escapeHTML(actualCat)}</span>
+                <span class="intro-tag">人群: ${escapeHTML(formula.适用人群 || '常规人群')}</span>
+                <span class="intro-tag">场景: ${escapeHTML(formula.临床场景 || '临床量表评估')}</span>
             `;
             document.getElementById('introContent').innerText = formula.公式解读 || "该量表广泛用于临床标准测算与评估。";
             document.getElementById('introMath').innerText = "依据标准：" + (formula.计算公式 || "国家现行医疗规范");
@@ -334,10 +350,10 @@
                 tableHtml += `<div style="overflow-x:auto; background:#FFF; border-radius:18px; border:1px solid var(--divider); margin-bottom:16px; box-shadow: 0 2px 8px rgba(0,0,0,0.02);">
                                 <table style="width:100%; min-width:400px; border-collapse:collapse; text-align:left; font-size:14px;">
                                     <thead style="background:#F8FAFC;">
-                                        <tr>${headers.map(h => `<th style="padding:14px 16px; color:var(--text-soft); font-weight:600; border-bottom:1px solid var(--divider); white-space:nowrap;">${h}</th>`).join('')}</tr>
+                                        <tr>${headers.map(h => `<th style="padding:14px 16px; color:var(--text-soft); font-weight:600; border-bottom:1px solid var(--divider); white-space:nowrap;">${escapeHTML(h)}</th>`).join('')}</tr>
                                     </thead>
                                     <tbody>
-                                        ${formula.参考表.map(row => `<tr>${headers.map(h => `<td style="padding:14px 16px; border-bottom:1px solid #F1F5F9; color:var(--text-main);">${row[h] || '-'}</td>`).join('')}</tr>`).join('')}
+                                        ${formula.参考表.map(row => `<tr>${headers.map(h => `<td style="padding:14px 16px; border-bottom:1px solid #F1F5F9; color:var(--text-main);">${escapeHTML(row[h] || '-')}</td>`).join('')}</tr>`).join('')}
                                     </tbody>
                                 </table>
                               </div>`;
@@ -347,33 +363,36 @@
                 tableHtml += `<div style="background:#FFFBEB; padding:18px; border-radius:18px; border:1px solid #FEF3C7; margin-bottom:16px;">
                                 <div style="font-weight:800; color:#92400E; margin-bottom:10px;">诊断与分型标准</div>
                                 <ul style="padding-left:20px; margin:0; color:#92400E; font-size:14px; line-height:1.7;">
-                                    ${formula.诊断标准.map(item => `<li style="margin-bottom:6px;">${item}</li>`).join('')}
+                                    ${formula.诊断标准.map(item => `<li style="margin-bottom:6px;">${escapeHTML(item)}</li>`).join('')}
                                 </ul>
                               </div>`;
             }
             document.getElementById('tableContainer').innerHTML = tableHtml;
 
             if (formula.输入 && formula.输入.length > 0) {
-                formula.输入.forEach(row => {
-                    inHtml += `<div class="input-row"><div class="input-label">${row.label}</div>`;
+                formula.输入.forEach((row, rowIndex) => {
+                    inHtml += `<div class="input-row"><div class="input-label">${escapeHTML(row.label)}</div>`;
                     if (row.type === 'number') {
                         inHtml += `<div class="field-box">
-                                    <input type="number" step="any" class="num-input calc-val" data-name="${row.name}" data-label="${row.label}" placeholder="${row.placeholder || '点击输入'}">
-                                    <span class="field-unit">${row.unit || ''}</span>
+                                    <input type="number" step="any" class="num-input calc-val" data-name="${escapeHTML(row.name)}" data-label="${escapeHTML(row.label)}" placeholder="${escapeHTML(row.placeholder || '点击输入')}">
+                                    <span class="field-unit">${escapeHTML(row.unit || '')}</span>
                                    </div>`;
                     }
                     else if (row.type === 'select' || row.type === 'radio') {
                         let firstOpt = row.options[0];
                         let defaultVal = typeof firstOpt === 'object' ? firstOpt.value : firstOpt;
 
-                        inHtml += `<div class="seg-control calc-val" data-name="${row.name}" data-val="${defaultVal}">` +
+                        inHtml += `<div class="seg-control calc-val" data-name="${escapeHTML(row.name)}" data-val="${escapeHTML(defaultVal)}">` +
                             row.options.map((o, i) => {
                                 let optLabel = typeof o === 'object' ? o.label : o;
                                 let optValue = typeof o === 'object' ? o.value : o;
-                                return `<button class="seg-btn ${i === 0 ? 'active' : ''}" onclick="setSeg(this, '${optValue}')">${optLabel}</button>`;
+                                return `<button class="seg-btn obj-btn ${i === 0 ? 'active' : ''}" data-grp="${rowIndex}" data-val="${escapeHTML(optValue)}">${escapeHTML(optLabel)}</button>`;
                             }).join('') + `</div>`;
                     } else if (row.type === 'checkbox') {
-                        inHtml += `<div class="seg-control calc-val" data-name="${row.name}" data-val="false"><button class="seg-btn active" onclick="setBool(this, false)">否</button><button class="seg-btn" onclick="setBool(this, true)">是</button></div>`;
+                        inHtml += `<div class="seg-control calc-val" data-name="${escapeHTML(row.name)}" data-val="false">
+                            <button class="seg-btn obj-btn active" data-grp="${rowIndex}" data-val="false">否</button>
+                            <button class="seg-btn obj-btn" data-grp="${rowIndex}" data-val="true">是</button>
+                        </div>`;
                     }
                     inHtml += `</div>`;
                 });
@@ -386,8 +405,16 @@
             document.body.classList.add('active-calc');
         }
 
-        function setSeg(btn, v) { const p = btn.parentElement; p.querySelectorAll('.seg-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active'); p.dataset.val = v; }
-        function setBool(btn, v) { const p = btn.parentElement; p.querySelectorAll('.seg-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active'); p.dataset.val = v; }
+        // 委托代理计算页面的按钮点击
+        document.getElementById('inputContainer').addEventListener('click', (e) => {
+            const btn = e.target.closest('.obj-btn');
+            if (btn) {
+                const parent = btn.parentElement;
+                parent.querySelectorAll('.obj-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                parent.setAttribute('data-val', btn.getAttribute('data-val'));
+            }
+        });
 
         document.getElementById('calcBtn').addEventListener('click', function () {
             try {
@@ -396,8 +423,8 @@
                 const inputs = document.querySelectorAll('.calc-val');
 
                 for (let el of inputs) {
-                    let n = el.dataset.name;
-                    let label = el.dataset.label;
+                    let n = el.getAttribute('data-name');
+                    let label = el.getAttribute('data-label');
                     if (el.tagName === 'INPUT' && el.type === 'number') {
                         let valStr = el.value.trim();
                         if (valStr === "") { alert(`【未填写】请录入 ${label} 的数值。`); el.parentElement.classList.add('error-box'); isErr = true; break; }
@@ -411,7 +438,7 @@
                         }
                         el.parentElement.classList.remove('error-box'); vals[n] = num;
                     } else if (el.classList.contains('seg-control')) {
-                        let v = el.dataset.val;
+                        let v = el.getAttribute('data-val');
                         if (v === "true" || v === "false") vals[n] = (v === "true");
                         else if (!isNaN(v) && v.trim() !== "") vals[n] = parseFloat(v);
                         else vals[n] = v; 
@@ -420,9 +447,11 @@
 
                 if (isErr) return;
 
-                let usageMap = JSON.parse(sessionStorage.getItem('medical_calc_usage') || '{}');
-                usageMap[formula.id] = (usageMap[formula.id] || 0) + 1;
-                sessionStorage.setItem('medical_calc_usage', JSON.stringify(usageMap));
+                try {
+                    let usageMap = JSON.parse(sessionStorage.getItem('medical_calc_usage') || '{}');
+                    usageMap[formula.id] = (usageMap[formula.id] || 0) + 1;
+                    sessionStorage.setItem('medical_calc_usage', JSON.stringify(usageMap));
+                } catch(e) {}
 
                 let resultFnStr = formula.计算结果 || formula.结果;
                 let result = new Function('v', 'return (' + resultFnStr + ')(v)')(vals);
@@ -444,7 +473,6 @@
 
                 document.getElementById('resLabel').innerText = formula.输出 || "测算结果";
                 document.getElementById('resVal').innerText = result;
-
                 document.getElementById('resAdvice').innerText = adviceText;
                 document.getElementById('resRange').innerText = formula.参考范围 || "详见国家现行临床医学指南规范";
 
@@ -452,15 +480,11 @@
                 setTimeout(() => { document.querySelector('.calc-body').scrollTo({ top: 800, behavior: 'smooth' }); }, 200);
             } catch (e) {
                 console.error(e);
-                alert("系统测算异常，请检查量表公式语法或选项是否对应。");
+                alert("系统测算时遇到了意外错误，可能是该公式参数缺失。");
             }
         });
 
         function goBack() { document.body.classList.remove('active-calc'); }
-        document.getElementById('searchInput').addEventListener('input', (e) => {
-            const kw = e.target.value.trim();
-            if (kw) renderList(null, kw); else renderList(currentCat);
-        });
     </script>
 </body>
 </html>
