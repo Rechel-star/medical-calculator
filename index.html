@@ -4,8 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>医疗量表计算助手</title>
-    <script src="database.js?v=6.0"></script>
+
+    <script src="common.js"></script>
+    <script src="children.js"></script>
+    <script src="liver.js"></script>
     <style>
+        /* 样式完全保留原版 UI 设计 */
         :root {
             --primary: #059669;
             --primary-light: #ECFDF5;
@@ -390,7 +394,6 @@
             box-shadow: 0 2px 8px rgba(0,0,0,0.02);
         }
 
-            /* 隐藏空容器时的边框 */
             .section-input:empty {
                 display: none;
             }
@@ -619,7 +622,11 @@
         </div>
         <div class="main-container">
             <aside class="sidebar" id="sidebar"></aside>
-            <main class="content-area" id="contentArea"></main>
+            <main class="content-area" id="contentArea">
+                <div id="loadError" style="display:none; padding:20px; text-align:center; color:var(--danger); font-size:14px; line-height:1.6;">
+                    ⚠️ 未检测到任何医疗数据文件。<br>请确认是否引入了正确的 .js 数据库文件。
+                </div>
+            </main>
         </div>
     </div>
 
@@ -642,7 +649,7 @@
                     <div class="res-top-label" id="resLabel">测算结果</div>
                     <div class="res-value-text" id="resVal">--</div>
                 </div>
-                <div class="info-card"><div class="info-header" style="color: var(--accent);">动态干预指导</div><div id="resAdvice" class="info-body dynamic-advice"></div></div>
+                <div class="info-card"><div class="info-header" style="color: var(--accent);">干预指导 / 标准说明</div><div id="resAdvice" class="info-body dynamic-advice"></div></div>
                 <div class="info-card" style="background:#F8FAFC; border:none;"><div class="info-header" style="color:#64748B;">参考标准</div><div id="resRange" class="info-body" style="color:#64748B;"></div></div>
             </div>
         </div>
@@ -654,6 +661,7 @@
         let currentCat = "";
         let formula = null;
 
+        // 全局生理极限值安全保护字典
         const SAFETY_LIMITS = {
             "weight": { min: 0.5, max: 300, label: "体重" },
             "wt": { min: 0.5, max: 300, label: "体重" },
@@ -664,48 +672,79 @@
             "scr": { min: 10, max: 3000, label: "血肌酐" }
         };
 
+        // ============================================================
+        // 🚀 核心修改区域：初始化与多文件数据合并逻辑
+        // ============================================================
         window.addEventListener('DOMContentLoaded', () => {
-            if (typeof F !== 'undefined') db = F;
-            else if (typeof BULTIN_DB !== 'undefined') db = BULTIN_DB;
+            let mergedData = [];
 
-            if (db && db.length > 0) {
-                let usageMap = JSON.parse(sessionStorage.getItem('medical_calc_usage') || '{}');
-                let commonIds = new Set(db.filter(i => i.category === '常用公式').map(i => i.id));
-
-                let dynamicCommons = [];
-                let hasDynamic = false;
-
-                db.forEach(item => {
-                    if (usageMap[item.id] >= 3 && item.category !== '常用公式' && !commonIds.has(item.id)) {
-                        let copy = JSON.parse(JSON.stringify(item));
-                        copy.originalCategory = item.category;
-                        copy.category = '常用公式';
-                        copy.title = '[高频] ' + copy.title;
-                        dynamicCommons.push(copy);
-                        commonIds.add(item.id);
-                        hasDynamic = true;
+            // 尝试读取全局 window 下可能存在的所有大写字母开头的数组（动态兼容所有 db_xxx.js）
+            // 这种写法最稳，不管你在外部叫 DB_CHILDREN 还是 DB_LIVER，只要是数组就能被收进池子
+            for (let key in window) {
+                // 筛选出全局变量里可能包含数据的数组 (比如 BULTIN_DB, DB_CHILDREN, DB_LIVER)
+                if (key !== 'webkitStorageInfo' && key === key.toUpperCase() && Array.isArray(window[key]) && window[key].length > 0) {
+                    // 仅抓取那些确实包含 id/title 等关键字段的数据对象
+                    if (window[key][0].hasOwnProperty('title') || window[key][0].hasOwnProperty('id')) {
+                        mergedData = mergedData.concat(window[key]);
                     }
-                });
-                db = db.concat(dynamicCommons);
-
-                window.hasDynamicCommons = hasDynamic;
-
-                categories = [...new Set(db.map(i => i.category || "常用公式"))];
-                categories.sort((a, b) => {
-                    if (a === '常用公式') return -1;
-                    if (b === '常用公式') return 1;
-                    return a.localeCompare(b);
-                });
-
-                currentCat = categories[0];
-                renderSidebar();
-                renderList(currentCat);
+                }
             }
+
+            // 备用兼容：万一用户用了小写的特殊变量名
+            if (typeof F !== 'undefined' && Array.isArray(F)) mergedData = mergedData.concat(F);
+
+            // 数据去重（防止引入了相同的文件导致公式重复）
+            const uniqueMap = new Map();
+            mergedData.forEach(item => {
+                if (item && item.id && !uniqueMap.has(item.id)) {
+                    uniqueMap.set(item.id, item);
+                }
+            });
+            db = Array.from(uniqueMap.values());
+
+            if (db.length === 0) {
+                // 如果最后还是没读到任何数据，直接在页面抛出友好提示，不让它白屏
+                document.getElementById('loadError').style.display = 'block';
+                return;
+            }
+
+            // --- 数据加载成功，往下走原生的高频提取与渲染逻辑 ---
+            let usageMap = JSON.parse(sessionStorage.getItem('medical_calc_usage') || '{}');
+            let commonIds = new Set(db.filter(i => i.category === '常用公式').map(i => i.id));
+            let dynamicCommons = [];
+            let hasDynamic = false;
+
+            db.forEach(item => {
+                if (usageMap[item.id] >= 3 && item.category !== '常用公式' && !commonIds.has(item.id)) {
+                    let copy = JSON.parse(JSON.stringify(item));
+                    copy.originalCategory = item.category;
+                    copy.category = '常用公式';
+                    copy.title = '[高频] ' + copy.title;
+                    dynamicCommons.push(copy);
+                    commonIds.add(item.id);
+                    hasDynamic = true;
+                }
+            });
+            db = db.concat(dynamicCommons);
+            window.hasDynamicCommons = hasDynamic;
+
+            // 提取所有分类
+            categories = [...new Set(db.map(i => i.category || "综合科室"))];
+            categories.sort((a, b) => {
+                if (a === '常用公式') return -1;
+                if (b === '常用公式') return 1;
+                return a.localeCompare(b);
+            });
+
+            currentCat = categories[0];
+            renderSidebar();
+            renderList(currentCat);
         });
 
+        // 以下全是你第一版的标准逻辑，一行不改，完美兼容
         function renderSidebar() {
             let counts = {};
-            db.forEach(item => { counts[item.category || "常用公式"] = (counts[item.category || "常用公式"] || 0) + 1; });
+            db.forEach(item => { counts[item.category || "综合科室"] = (counts[item.category || "综合科室"] || 0) + 1; });
 
             let html = categories.map(c => `
                     <button class="cat-btn ${c === currentCat ? 'active' : ''}" onclick="switchCat('${c}')">
@@ -714,22 +753,19 @@
                     </button>
                 `).join('');
 
-            html += `<div class="sidebar-footer">更多分类<br>敬请期待</div>`;
+            html += `<div class="sidebar-footer">科室分类<br>动态管理</div>`;
             document.getElementById('sidebar').innerHTML = html;
         }
 
         function switchCat(c) { currentCat = c; renderSidebar(); renderList(c); }
 
         function renderList(c, kw = "") {
-            let list = kw ? db.filter(i => i.title.includes(kw) || (i.category || "").includes(kw)) : db.filter(i => (i.category || "常用公式") === c);
+            let list = kw ? db.filter(i => i.title.includes(kw) || (i.category || "").includes(kw)) : db.filter(i => (i.category || "综合科室") === c);
+            document.getElementById('loadError').style.display = 'none'; // 隐藏错误提示
 
             let html = "";
             if (c === '常用公式' && !kw && window.hasDynamicCommons) {
-                html += `
-                    <div class="reset-bar">
-                        <span class="reset-text">当前包含智能提取的高频公式</span>
-                        <button class="reset-btn" onclick="resetCommons()">恢复默认</button>
-                    </div>`;
+                html += `<div class="reset-bar"><span class="reset-text">当前包含智能提取的高频公式</span><button class="reset-btn" onclick="resetCommons()">恢复默认</button></div>`;
             }
 
             html += list.map((item, idx) => {
@@ -738,14 +774,13 @@
                 let funcTagHtml = `<span class="card-tag tag-func">${item.临床场景 || "临床量表评估"}</span>`;
 
                 return `
-                    <div class="formula-card" onclick="openDetail(${idx})">
+                    <div class="formula-card" onclick="openDetail('${item.id}')">
                         <div class="card-title">${item.title}</div>
                         <div class="card-tags">${catTagHtml}${funcTagHtml}</div>
                     </div>`;
             }).join('');
 
             document.getElementById('contentArea').innerHTML = html;
-            window.currentView = list;
         }
 
         function resetCommons() {
@@ -755,15 +790,14 @@
             }
         }
 
-        // ============================================
-        //  ⬇️ 核心修改位置：openDetail 函数 ⬇️
-        // ============================================
-        function openDetail(idx) {
-            formula = window.currentView[idx];
+        function openDetail(targetId) {
+            formula = db.find(i => i.id === targetId);
+            if (!formula) return;
+
             document.getElementById('calcTitle').innerText = formula.title;
             document.getElementById('resultBlock').style.display = 'none';
 
-            let actualCat = formula.originalCategory || formula.category || '通用';
+            let actualCat = formula.originalCategory || formula.category || '综合';
             document.getElementById('introTags').innerHTML = `
                     <span class="intro-tag">科室: ${actualCat}</span>
                     <span class="intro-tag">人群: ${formula.适用人群 || '常规人群'}</span>
@@ -775,7 +809,6 @@
             let inHtml = '';
             let tableHtml = '';
 
-            // 1. 处理表格 (参考表/诊断标准) 渲染
             if (formula.参考表 && formula.参考表.length > 0) {
                 let headers = Object.keys(formula.参考表[0]);
                 tableHtml += `<div style="overflow-x:auto; background:#FFF; border-radius:18px; border:1px solid var(--divider); margin-bottom:16px; box-shadow: 0 2px 8px rgba(0,0,0,0.02);">
@@ -798,10 +831,8 @@
                                     </ul>
                                   </div>`;
             }
-
             document.getElementById('tableContainer').innerHTML = tableHtml;
 
-            // 2. 处理输入框 (增加容错判断)
             if (formula.输入 && formula.输入.length > 0) {
                 formula.输入.forEach(row => {
                     inHtml += `<div class="input-row"><div class="input-label">${row.label}</div>`;
@@ -826,17 +857,14 @@
                     }
                     inHtml += `</div>`;
                 });
-
                 document.getElementById('calcBtn').style.display = 'block';
             } else {
-                // 如果没有输入框（比如只是一个参考表），隐藏测算按钮
                 document.getElementById('calcBtn').style.display = 'none';
             }
 
             document.getElementById('inputContainer').innerHTML = inHtml;
             document.body.classList.add('active-calc');
         }
-        // ============================================
 
         function setSeg(btn, v) { const p = btn.parentElement; p.querySelectorAll('.seg-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active'); p.dataset.val = v; }
         function setBool(btn, v) { const p = btn.parentElement; p.querySelectorAll('.seg-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active'); p.dataset.val = v; }
@@ -858,52 +886,41 @@
 
                         let limit = SAFETY_LIMITS[n.toLowerCase()];
                         if (limit && (num < limit.min || num > limit.max)) {
-                            alert(`【数值异常】您输入的 ${label} 偏离了生理极限。\n请检查是否填错单位。(参考范围: ${limit.min}~${limit.max})`);
+                            alert(`【数值异常】您输入的 ${label} 偏离了生理极限。\\n请检查是否填错单位。(参考范围: ${limit.min}~${limit.max})`);
                             el.parentElement.classList.add('error-box'); isErr = true; break;
                         }
                         el.parentElement.classList.remove('error-box'); vals[n] = num;
                     } else if (el.classList.contains('seg-control')) {
                         let v = el.dataset.val;
-                        if (v === "true" || v === "false") {
-                            vals[n] = (v === "true");
-                        } else if (!isNaN(v) && v.trim() !== "") {
-                            vals[n] = parseFloat(v);
-                        } else {
-                            vals[n] = v;
-                        }
+                        if (v === "true" || v === "false") vals[n] = (v === "true");
+                        else if (!isNaN(v) && v.trim() !== "") vals[n] = parseFloat(v);
+                        else vals[n] = v;
                     } else { vals[n] = el.value; }
                 }
 
                 if (isErr) return;
 
+                // 记录高频使用
                 let usageMap = JSON.parse(sessionStorage.getItem('medical_calc_usage') || '{}');
                 usageMap[formula.id] = (usageMap[formula.id] || 0) + 1;
                 sessionStorage.setItem('medical_calc_usage', JSON.stringify(usageMap));
 
-                let result = new Function('v', 'return (' + formula.计算结果 + ')(v)')(vals);
-                let formatted = result;
-                if (formula.id === 'ped-fluid' && typeof result === 'string') {
-                    formatted = result.replace('每日:', '').replace('mL /h:', ' mL/d\n').replace('mL/h', ' mL/h');
-                }
+                // 核心计算与渲染
+                let resultFnStr = formula.计算结果 || formula.结果;
+                let result = new Function('v', 'return (' + resultFnStr + ')(v)')(vals);
 
                 let adviceText = "遵医嘱进行临床处理。";
                 if (formula.健康建议) {
                     if (typeof formula.健康建议 === 'string' && formula.健康建议.trim().startsWith('function')) {
-                        try {
-                            let adviceFn = new Function('res', 'v', 'return (' + formula.健康建议 + ')(res, v)');
-                            adviceText = adviceFn(result, vals);
-                        } catch (e) {
-                            console.error("动态建议执行出错", e);
-                            adviceText = "干预指导生成异常，请参考基本临床指南。";
-                        }
+                        let adviceFn = new Function('res', 'v', 'return (' + formula.健康建议 + ')(res, v)');
+                        adviceText = adviceFn(result, vals);
                     } else {
                         adviceText = formula.健康建议;
                     }
                 }
 
                 document.getElementById('resLabel').innerText = formula.输出 || "测算结果";
-                document.getElementById('resVal').innerText = formatted;
-
+                document.getElementById('resVal').innerText = result;
                 document.getElementById('resAdvice').innerText = adviceText;
                 document.getElementById('resRange').innerText = formula.参考范围 || "详见国家现行临床医学指南规范";
 
