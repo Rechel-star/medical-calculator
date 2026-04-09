@@ -125,7 +125,7 @@
             <aside class="sidebar" id="sidebar"></aside>
             <main class="content-area" id="contentArea">
                 <div id="loadError" style="display:none; padding:20px; text-align:center; color:var(--danger); font-size:14px; line-height:1.6;">
-                    ⚠️ 未检测到任何有效数据。<br>请确认 .js 文件格式正确且变量名为 DB_ 开头。
+                    ⚠️ 未检测到任何有效数据。<br>请确认 .js 文件已正确引入。
                 </div>
             </main>
         </div>
@@ -182,11 +182,19 @@
                 }
             }
 
-            // 【终极安全防线】：强力过滤掉由于 JSON 多写逗号、少写字段产生的 null 或残缺数据
-            // 彻底防止搜索和点击时触发 includes 报错崩溃！
-            mergedData = mergedData.filter(item => 
-                item && typeof item === 'object' && item.id && item.title
-            );
+            // 【终极安全防线】：强力清洗所有数据，解决隐形换行符和字段缺失导致的崩溃
+            let validData = [];
+            mergedData.forEach(item => {
+                if (item && typeof item === 'object' && item.id && item.title) {
+                    // 强制转为字符串并去除首尾隐藏的换行符/空格 (\r \n)
+                    item.id = String(item.id).trim();
+                    item.title = String(item.title).trim();
+                    item.category = String(item.category || "综合科室").trim();
+                    if(item.临床场景) item.临床场景 = String(item.临床场景).trim();
+                    validData.push(item);
+                }
+            });
+            mergedData = validData;
 
             // 3. 数据去重
             const uniqueMap = new Map();
@@ -218,12 +226,10 @@
             db = db.concat(dynamicCommons);
             window.hasDynamicCommons = hasDynamic;
 
-            // 5. 分类去重与排序
-            categories = [...new Set(db.map(i => i.category || "综合科室"))];
-            
-            // 【修复：让"常用公式"永久置顶】
-            categories = categories.filter(c => c !== "常用公式"); // 先移除
-            categories.unshift("常用公式"); // 再强制插到第一位
+            // 5. 分类排序 (强制固定"常用公式"排在第一位)
+            categories = [...new Set(db.map(i => i.category))];
+            categories = categories.filter(c => c !== "常用公式"); 
+            categories.unshift("常用公式"); 
 
             currentCat = categories[0];
             renderSidebar();
@@ -232,14 +238,18 @@
 
         function renderSidebar() {
             let counts = {};
-            db.forEach(item => { counts[item.category || "综合科室"] = (counts[item.category || "综合科室"] || 0) + 1; });
+            db.forEach(item => { counts[item.category] = (counts[item.category] || 0) + 1; });
 
-            let html = categories.map(c => `
-                <button class="cat-btn ${c === currentCat ? 'active' : ''}" onclick="switchCat('${c}')">
+            let html = categories.map(c => {
+                // 安全转义，防止名字里有单引号或双引号撑爆 HTML
+                let safeC = c.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                return `
+                <button class="cat-btn ${c === currentCat ? 'active' : ''}" onclick="switchCat('${safeC}')">
                     <span>${c}</span>
                     <span class="cat-count">${counts[c] || 0}</span>
                 </button>
-            `).join('');
+                `;
+            }).join('');
 
             html += `<div class="sidebar-footer">科室分类<br>动态管理</div>`;
             document.getElementById('sidebar').innerHTML = html;
@@ -254,10 +264,17 @@
         function renderList(c, kw = "") {
             document.getElementById('loadError').style.display = 'none';
 
-            // 【安全回退】：使用 (i.title || "") 防止读取 undefined 崩溃
-            let list = kw 
-                ? db.filter(i => (i.title || "").toLowerCase().includes(kw.toLowerCase()) || (i.category || "综合科室").toLowerCase().includes(kw.toLowerCase())) 
-                : db.filter(i => (i.category || "综合科室") === c);
+            let list;
+            if (kw) {
+                // 搜索功能加固：强制转字符串，彻底防止 toLowerCase() 报类型错误
+                let searchKw = String(kw).toLowerCase().trim();
+                list = db.filter(i => 
+                    String(i.title).toLowerCase().includes(searchKw) || 
+                    String(i.category).toLowerCase().includes(searchKw)
+                );
+            } else {
+                list = db.filter(i => i.category === c);
+            }
 
             let html = "";
             if (c === '常用公式' && !kw && window.hasDynamicCommons) {
@@ -265,20 +282,23 @@
             }
 
             if (list.length === 0) {
-                html += `<div style="text-align:center; padding:40px 20px; color:#94A3B8; font-size:14px;">当前分类暂无量表数据</div>`;
+                html += `<div style="text-align:center; padding:40px 20px; color:#94A3B8; font-size:14px;">当前分类暂无量表数据或检索无结果</div>`;
+            } else {
+                html += list.map((item) => {
+                    let actualCat = item.originalCategory || item.category || "通用";
+                    let catTagHtml = (actualCat !== "常用公式") ? `<span class="card-tag tag-cat">${actualCat}</span>` : "";
+                    let scene = item.临床场景 ? String(item.临床场景).trim() : "临床评估";
+                    let funcTagHtml = `<span class="card-tag tag-func">${scene}</span>`;
+                    
+                    let safeId = String(item.id).replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+
+                    return `
+                    <div class="formula-card" onclick="openDetail('${safeId}')">
+                        <div class="card-title">${item.title}</div>
+                        <div class="card-tags">${catTagHtml}${funcTagHtml}</div>
+                    </div>`;
+                }).join('');
             }
-
-            html += list.map((item) => {
-                let actualCat = item.originalCategory || item.category || "通用";
-                let catTagHtml = (actualCat !== "常用公式") ? `<span class="card-tag tag-cat">${actualCat}</span>` : "";
-                let funcTagHtml = `<span class="card-tag tag-func">${item.临床场景 || "临床评估"}</span>`;
-
-                return `
-                <div class="formula-card" onclick="openDetail('${item.id}')">
-                    <div class="card-title">${item.title}</div>
-                    <div class="card-tags">${catTagHtml}${funcTagHtml}</div>
-                </div>`;
-            }).join('');
 
             document.getElementById('contentArea').innerHTML = html;
         }
@@ -386,7 +406,7 @@
 
                         let limit = SAFETY_LIMITS[n.toLowerCase()];
                         if (limit && (num < limit.min || num > limit.max)) {
-                            alert(`【数值异常】您输入的 ${label} 偏离了生理极限。\\n请检查是否填错单位。(参考范围: ${limit.min}~${limit.max})`);
+                            alert(`【数值异常】您输入的 ${label} 偏离了生理极限。\n请检查是否填错单位。(参考范围: ${limit.min}~${limit.max})`);
                             el.parentElement.classList.add('error-box'); isErr = true; break;
                         }
                         el.parentElement.classList.remove('error-box'); vals[n] = num;
@@ -410,8 +430,13 @@
                 let adviceText = "遵医嘱进行临床处理。";
                 if (formula.健康建议) {
                     if (typeof formula.健康建议 === 'string' && formula.健康建议.trim().startsWith('function')) {
-                        let adviceFn = new Function('res', 'v', 'return (' + formula.健康建议 + ')(res, v)');
-                        adviceText = adviceFn(result, vals);
+                        try {
+                            let adviceFn = new Function('res', 'v', 'return (' + formula.健康建议 + ')(res, v)');
+                            adviceText = adviceFn(result, vals);
+                        } catch (e) {
+                            console.error("动态建议执行出错", e);
+                            adviceText = "干预指导生成异常，请参考基本临床指南。";
+                        }
                     } else {
                         adviceText = formula.健康建议;
                     }
@@ -419,6 +444,7 @@
 
                 document.getElementById('resLabel').innerText = formula.输出 || "测算结果";
                 document.getElementById('resVal').innerText = result;
+
                 document.getElementById('resAdvice').innerText = adviceText;
                 document.getElementById('resRange').innerText = formula.参考范围 || "详见国家现行临床医学指南规范";
 
@@ -431,14 +457,9 @@
         });
 
         function goBack() { document.body.classList.remove('active-calc'); }
-        
         document.getElementById('searchInput').addEventListener('input', (e) => {
             const kw = e.target.value.trim();
-            if (kw) {
-                renderList(null, kw); 
-            } else {
-                renderList(currentCat);
-            }
+            if (kw) renderList(null, kw); else renderList(currentCat);
         });
     </script>
 </body>
