@@ -2516,7 +2516,7 @@ var DB_CHILDREN = [
     },
     {
         "id": "neo_vent",
-        "title": "新生儿及早产儿常见严重呼吸系统疾病机械通气初调参数 (经验指南)",
+        "title": "新生儿常见疾病机械通气初调参数",
         "type": "reference_table",
         "输出": "呼吸机模式及初始设定极值",
         "输入": [],
@@ -2542,7 +2542,7 @@ var DB_CHILDREN = [
     },
     {
         "id": "neo_tpn",
-        "title": "新生儿(尤其是极低出生体重儿)静脉营养核心成分滴定原则",
+        "title": "新生儿肠外营养(TPN)推荐用量表",
         "type": "reference_table",
         "输出": "糖、蛋白、脂肪起量及极量",
         "输入": [],
@@ -2559,7 +2559,7 @@ var DB_CHILDREN = [
     },
     {
         "id": "neo_matur",
-        "title": "新生儿成熟度与胎龄评估表 (New Ballard Score 物理体征核心项)",
+        "title": "新生儿成熟度评估表",
         "type": "reference_table",
         "输出": "不同孕周物理体征标志",
         "输入": [],
