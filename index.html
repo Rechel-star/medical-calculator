@@ -10,7 +10,6 @@
     <script src="liver.js"></script>
     
     <style>
-        /* UI 样式保持不变 */
         :root { --primary: #059669; --primary-light: #ECFDF5; --accent: #F59E0B; --accent-light: #FFFBEB; --bg-content: #F4F7F4; --sidebar-bg: #FFFFFF; --text-main: #1F2937; --text-soft: #64748B; --divider: #E2E8F0; --card-radius: 18px; --danger: #EF4444; }
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, "SF Pro Text", "PingFang SC", sans-serif; -webkit-tap-highlight-color: transparent; }
         body { background: var(--sidebar-bg); color: var(--text-main); height: 100vh; overflow: hidden; position: relative; }
@@ -88,13 +87,13 @@
 <body>
 
     <div id="sys-error-log" style="display:none; position:fixed; top:0; left:0; width:100%; background:#EF4444; color:#FFF; z-index:9999; padding:12px; font-size:13px; font-weight:bold; box-shadow:0 4px 10px rgba(0,0,0,0.2);"></div>
-
     <script>
-        // 全局崩溃拦截器
         window.onerror = function(msg, src, line) {
             const log = document.getElementById('sys-error-log');
-            log.style.display = 'block';
-            log.innerHTML += `🚨 系统错误: ${msg} (第 ${line} 行)<br>`;
+            if(log) {
+                log.style.display = 'block';
+                log.innerHTML += `🚨 错误: ${msg} (第 ${line} 行)<br>`;
+            }
             console.error(msg, line);
         };
     </script>
@@ -111,7 +110,7 @@
             <aside class="sidebar" id="sidebar"></aside>
             <main class="content-area" id="contentArea">
                 <div id="loadError" style="display:none; padding:20px; text-align:center; color:var(--danger); font-size:14px; line-height:1.6;">
-                    ⚠️ 未检测到数据。请确认引入了正确的 .js 数据库文件。
+                    ⚠️ 未检测到有效数据。<br>请确认引入了正确的 .js 数据库文件。
                 </div>
             </main>
         </div>
@@ -158,7 +157,6 @@
             "scr": { min: 10, max: 3000, label: "血肌酐" }
         };
 
-        // 转义工具，防止数据导致 HTML 错乱
         function escapeHTML(str) {
             if (!str) return "";
             return String(str)
@@ -172,14 +170,14 @@
         window.addEventListener('DOMContentLoaded', () => {
             let mergedData = [];
             
-            // 抓取数据池
+            // 多文件抓取核心逻辑
             for (let key in window) {
                 if ((key.startsWith('DB_') || key === 'BULTIN_DB' || key === 'F') && Array.isArray(window[key])) {
                     mergedData = mergedData.concat(window[key]);
                 }
             }
 
-            // 极度严格的数据清洗：剔除任何不规范、没有标题或ID的数据
+            // 数据清洗
             let validData = [];
             mergedData.forEach(item => {
                 if (item && typeof item === 'object' && item.id && item.title) {
@@ -191,21 +189,18 @@
             });
             mergedData = validData;
 
-            // 数据去重
             const uniqueMap = new Map();
             mergedData.forEach(item => uniqueMap.set(item.id, item));
             db = Array.from(uniqueMap.values());
 
+            let errBox = document.getElementById('loadError');
             if (db.length === 0) {
-                document.getElementById('loadError').style.display = 'block';
+                if(errBox) errBox.style.display = 'block';
                 return;
             }
 
-            // 智能抓取高频公式 (加上 try...catch 防浏览器阻挡报错)
             let usageMap = {};
-            try {
-                usageMap = JSON.parse(sessionStorage.getItem('medical_calc_usage') || '{}');
-            } catch(e) {}
+            try { usageMap = JSON.parse(sessionStorage.getItem('medical_calc_usage') || '{}'); } catch(e) {}
 
             let commonIds = new Set(db.filter(i => i.category === '常用公式').map(i => i.id));
             let dynamicCommons = [];
@@ -224,10 +219,9 @@
             });
             db = db.concat(dynamicCommons);
 
-            // 排列科室
             categories = [...new Set(db.map(i => i.category))];
             categories = categories.filter(c => c !== "常用公式"); 
-            categories.unshift("常用公式"); // 强行霸占第一席位
+            categories.unshift("常用公式"); 
 
             currentCat = categories[0];
             renderSidebar();
@@ -238,19 +232,20 @@
             let counts = {};
             db.forEach(item => { counts[item.category] = (counts[item.category] || 0) + 1; });
 
-            // 抛弃 onclick 注入，改用自定义属性 data-cat，绝对防断裂
-            let html = categories.map(c => `
+            let html = categories.map(c => {
+                let safeC = c.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                return `
                 <button class="cat-btn ${c === currentCat ? 'active' : ''}" data-cat="${escapeHTML(c)}">
                     <span>${escapeHTML(c)}</span>
                     <span class="cat-count">${counts[c] || 0}</span>
                 </button>
-            `).join('');
+                `;
+            }).join('');
 
             html += `<div class="sidebar-footer">科室分类<br>动态管理</div>`;
             document.getElementById('sidebar').innerHTML = html;
         }
 
-        // 委托代理点击侧边栏事件
         document.getElementById('sidebar').addEventListener('click', (e) => {
             const btn = e.target.closest('.cat-btn');
             if (btn) {
@@ -262,7 +257,9 @@
         });
 
         function renderList(c, kw = "") {
-            document.getElementById('loadError').style.display = 'none';
+            // 安全隐藏错误框的逻辑
+            let errBox = document.getElementById('loadError');
+            if (errBox) errBox.style.display = 'none';
 
             let list;
             if (kw) {
@@ -283,13 +280,13 @@
             if (list.length === 0) {
                 html += `<div style="text-align:center; padding:40px 20px; color:#94A3B8; font-size:14px;">当前分类暂无量表数据或检索无结果</div>`;
             } else {
-                // 抛弃 onclick，使用 data-id
                 html += list.map((item) => {
                     let actualCat = item.originalCategory || item.category || "通用";
                     let catTagHtml = (actualCat !== "常用公式") ? `<span class="card-tag tag-cat">${escapeHTML(actualCat)}</span>` : "";
                     let scene = item.临床场景 ? String(item.临床场景).trim() : "临床评估";
                     let funcTagHtml = `<span class="card-tag tag-func">${escapeHTML(scene)}</span>`;
-                    
+                    let safeId = String(item.id).replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+
                     return `
                     <div class="formula-card" data-id="${escapeHTML(item.id)}">
                         <div class="card-title">${escapeHTML(item.title)}</div>
@@ -300,7 +297,6 @@
 
             document.getElementById('contentArea').innerHTML = html;
 
-            // 绑定恢复默认按钮事件
             const resetBtn = document.getElementById('btnResetCommon');
             if(resetBtn) {
                 resetBtn.addEventListener('click', () => {
@@ -312,15 +308,11 @@
             }
         }
 
-        // 委托代理点击量表卡片事件
         document.getElementById('contentArea').addEventListener('click', (e) => {
             const card = e.target.closest('.formula-card');
-            if (card) {
-                openDetail(card.getAttribute('data-id'));
-            }
+            if (card) openDetail(card.getAttribute('data-id'));
         });
 
-        // 搜索框绑定事件
         document.getElementById('searchInput').addEventListener('input', (e) => {
             const kw = e.target.value.trim();
             if (kw) renderList(null, kw); else renderList(currentCat);
@@ -405,7 +397,6 @@
             document.body.classList.add('active-calc');
         }
 
-        // 委托代理计算页面的按钮点击
         document.getElementById('inputContainer').addEventListener('click', (e) => {
             const btn = e.target.closest('.obj-btn');
             if (btn) {
